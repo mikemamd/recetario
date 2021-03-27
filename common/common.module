@@ -1,0 +1,153 @@
+<?php
+/**
+ * @file Helper para funciones globales
+ * @author Miguel Martínez <miguel01amd@gmail.com>
+ * @package Recetario | Custom
+ * @info Este módulo contiene las funciones para el contexto global de Drupal
+ * @vertion dev 1.0.0.0
+ */
+
+/**
+ * Devuelve el lenguaje utilizado actualmente
+ * @return string
+ */
+function common_language() {
+  global $language;
+  $current_language = $language->language;
+  return $current_language;
+}
+
+/**
+ * Construye URL del archivo a través de su FID
+ * @param $fid
+ * @return string
+ */
+function common_file_path($fid = NULL) {
+  $url = '';
+  if ($fid) {
+    $file_load = file_load($fid);
+    $uri       = $file_load->uri;
+    $url       = file_create_url($uri);
+} // end if
+
+  return $url;
+}
+
+/*
+ * Recupera el momento de la receta vía TID
+ */
+function common_momentos_recetas($tid) {
+     #$prods = '';
+     $i  = 0;
+     $prod_content = [];
+     if (empty($tid)) {
+       return $prod_content;
+     } // end if
+     $query_prods = db_select('field_revision_field_moment', 'frfm')
+       ->condition('frfm.field_moment_tid', (int)$tid, '=');
+       $query_prods->fields('frfm', ['entity_id']);
+       $results_prods = $query_prods->execute()->fetchAll();
+       if (count($results_prods) > 0) {
+         foreach($results_prods as $result) {
+           $prod_content[$i] = [
+             'prod_id' => $result->entity_id,
+           ];
+           ++$i;
+         } // end foreach
+         } // end if
+
+         return $prod_content;
+}
+
+
+/**
+ * Devuelve el momento de la hora actualmente
+ * @return array
+ */
+ function common_get_moment() {
+  $hour   = date('H:i');
+  $vid    = taxonomy_vocabulary_machine_name_load('moments_of_the_day')->vid;
+  $moment = '';
+
+  $qry = db_select('taxonomy_term_data', 'ttd');
+  $qry->leftJoin('field_data_field_initial_hour', 'ih', 'ih.entity_id = ttd.tid');
+  $qry->leftJoin('field_data_field_end_hour', 'eh', 'eh.entity_id = ttd.tid');
+  $qry->leftJoin('field_data_field_icon_class', 'fic', 'fic.entity_id = ttd.tid');
+  $qry->condition('ttd.vid', $vid, '=');
+  $qry->condition('ih.field_initial_hour_value', $hour, '<=');
+  $qry->condition('eh.field_end_hour_value', $hour, '>=');
+  $qry->fields('ttd', ['tid','name']);
+  $qry->fields('ttd', ['tid','name']);
+  $qry->fields('fic', ['field_icon_class_value']);
+  $results = $qry->execute()->fetchAll();
+
+  if (!empty($results)) {
+    foreach ($results as $value) {
+      $moment = [
+        'tid'   => $value->tid,
+        'name'  => $value->name,
+        'class' => $value->field_icon_class_value,
+      ];
+    }//endforeach
+    return $moment;
+  }//endif
+}
+
+/**
+ * Return the finally url of node.
+ * @return string
+ */
+function common_get_alias($nid) {
+  if (empty($nid)) {
+    return $alias;
+  } // end if
+  $source = 'node/'.$nid;
+  $qry = db_select('url_alias', 'ua');
+  $qry->condition('ua.source', $source, '=');
+  $qry->fields('ua', ['alias']);
+  $results = $qry->execute()->fetchAll();
+  if (isset($results) && !empty($results)) {
+    foreach ($results as $result) {
+      $alias = $result->alias;
+    }
+    return $alias;
+  }
+  else{
+    $alias = $source;
+    }
+}
+
+/**
+ * Devuelve las diferentes categorias existentes
+ * @return string
+ */
+function common_get_categorias($tid){
+  $table  = [];
+  $vocab  = taxonomy_vocabulary_machine_name_load('category_products');
+  $vid    = $vocab->vid;
+
+  if (empty($tid) && empty($vid)) {
+    return $table;
+  }
+
+  global $base_url;
+
+  $query = db_select('taxonomy_term_data', 'ttd')
+        ->condition('ttd.vid', $vid, '=')
+        ->condition('ttd.tid', $tid, '!=');
+  $query->fields('ttd', ['tid', 'name']);
+  $results = $query->execute()->fetchAll();
+
+  if (isset($results) && !empty($results)) {
+    foreach ($results as $result) {
+      $link = 'category/';
+      $table[] = [
+        'linkn' => $link,
+        'namen' => $result->name,
+      ];
+    }//end foreach
+  }//end if
+
+    return $table;
+
+}
