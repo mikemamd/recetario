@@ -1,0 +1,114 @@
+<?php
+/**
+ * @file Cetegorias
+ * @author Miguel Martínez <miguel01amd@gmail.com>
+ * @package Recetario | Custom
+ * @info Módulo para el categorizado de los productos
+ * @vertion dev 1.0.0
+ */
+
+// Load library to methods
+module_load_include('inc', 'categorias', 'categorias');
+
+/*
+ * Implements hook_permission().
+*/
+ function categorias_permission() {
+   $perm = array(
+     'administer categorias' => array(
+       'title'       => t('Administer block categorias'),
+       'description' => t('Administer Categorias of categorias'),
+     ),
+     'view categorias' => array(
+       'title'       => t('View block categorias'),
+       'description' => t('Permit viewer block to categorias'),
+     ),
+   );
+   return $perm;
+ }
+
+/**
+ * Implements hook_menu()
+ *
+ * @return mixed
+ */
+function categorias_menu(){
+  $items = array();
+  // Usando Ajax sin formularios. Clase 'use-ajax'.
+  $items['category/%'] = array(
+    'title'            => t('Categorias'),
+    'description'      => t('Categorias de Productos'),
+    'page callback'    => 'categorias_getdetail',
+    'access arguments' => array('view categorias'),
+    'access callback'  => TRUE,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_block_info()
+ *
+ * @return mixed
+ */
+function categorias_block_info() {
+  $block['categorias_block'] = array(
+    'info' => t('Lista Categorias de productos'),
+    'title' => '<none>',
+    'cache' => DRUPAL_NO_CACHE,
+  );
+
+	$block['categoria_block'] = array(
+    'info' => t('Lista productos de cada categoria'),
+    'title' => '<none>',
+    'cache' => DRUPAL_NO_CACHE,
+  );
+  return $block;
+}
+
+/**
+ * Implements hook_block_view().
+ *
+ * Defines function that sets block view
+ */
+function categorias_block_view($delta = '')
+{
+  $block = array();
+  switch ($delta) {
+    case 'categoria_block':
+    if(user_access('view categorias')){
+      $block['content'] = categorias_getdetail();
+    }else{
+      $block['content'] = t('Not access view content');
+    }
+      break;
+
+    case 'categorias_block':
+    if(user_access('view categorias')){
+      $block['content'] = categorias_getall();
+    }else{
+      $block['content'] = t('Not access view content');
+    }
+      break;
+  } // end switch
+  return $block;
+}
+
+/**
+ * Implements hook_theme().
+ *
+ * @see templates
+ * @return array
+ */
+function categorias_theme()
+{
+  return array(
+    'categoria_theme_tpl' => array(
+      'template'  => 'templates/categoria',
+      'variables' => array(),
+    ),
+    'categorias_theme_tpl' => array(
+      'template'  => 'templates/categorias',
+      'variables' => array(),
+    )
+  );
+}

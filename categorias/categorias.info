@@ -1,0 +1,5 @@
+name = Categorias
+description = Modulo de productos por categorias
+package = Recetario | Custom
+core = 7.x
+version = "1.0.0"
