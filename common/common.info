@@ -1,0 +1,4 @@
+name = Common Helper
+description = Funciones globales.
+package = Recetario | Custom
+core = 7.x
