@@ -1,0 +1,7 @@
+name = Espacio Consejos
+description = Módulo para la sección:  "Consejos" que muestra una publicación de Facebook.
+package = Recetario | Custom
+core = 7.x
+version = "1.0.0"
+dependencies[] = common
+configure = admin/config/recetario/adviceaunt

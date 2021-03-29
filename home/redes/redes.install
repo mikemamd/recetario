@@ -1,0 +1,48 @@
+<?php
+
+
+/**
+ * @file
+ * Install, update and uninstall functions for the Redes module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function redes_schema(){
+  $schema["adviceaunt"] = array(
+    'description' => 'Tabla para seccion Consejo',
+    'fields' => array(
+      'id' => array(
+        'type'        => 'serial',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE,
+        'description' => 'id de elemento'
+      ),
+      'frame' => array(
+        'type'        => 'varchar',
+        'length'      => 300,
+        'not null'    => TRUE,
+        'default'     => '0',
+        'description' => 'Frame de la publicación en Facebook',
+      ),
+      'language' => array(
+        'type'        => 'varchar',
+        'length'      => 5,
+        'not null'    => TRUE,
+        'default'     => '0',
+        'description' => 'Lenguaje del contenido',
+      ),
+      'fb_create' => array(
+        'description' => 'Fecha de modificación de contenido',
+        'type'        => 'varchar',
+        'length'      => 15,
+        'not null'    => TRUE,
+        'default'     => 0,
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+
+  return $schema;
+}

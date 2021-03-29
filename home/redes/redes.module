@@ -1,0 +1,151 @@
+<?php
+/**
+ * @file Redes
+ * @author Miguel Martínez <miguel01amd@gmail.com>
+ * @package Recetario | Custom
+ * @info Módulo para desplegar publicaciones de Facebook en la sección de consejos
+ * @vertion dev 1.0.0
+ */
+
+
+/*
+ * Implements hook_permission().
+ */
+function redes_permission() {
+  $perm = array(
+    'administer redes' => array(
+      'title'       => t('administer redes module'),
+      'description' => t('Administer content of redes module'),
+    ),
+    'create redes'     => array(
+      'title'       => t('Create custom content of redes'),
+      'description' => t('Permit create custom redes by user'),
+    ),
+    'view redes'       => array(
+      'title'       => t('view redes'),
+      'description' => t('Permit viewer block redes'),
+    ),
+  );
+  return $perm;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function redes_menu() {
+  $items = array();
+
+  $items['admin/config/recetario/adviceaunt'] = array(
+    'title'            => t('Settings slider module'),
+    'description'      => t('Select the setting of a slider.'),
+    'access arguments' => array('administer redes'),
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('redes_admin_form_table'),
+    'access arguments' => array('administer redes'),
+    'file'             => 'redes.admin.inc',
+    'type'             => MENU_NORMAL_ITEM,
+    'weight'           => 1,
+  );
+  $items['admin/config/recetario/adviceaunt/table'] = array(
+    'title'            => t('Settings of Advice Aunt'),
+    'description'      => t('Settings of Advice Aunt'),
+    'type'             => MENU_DEFAULT_LOCAL_TASK,
+    'weight'           => 1,
+  );
+  $items['admin/config/recetario/adviceaunt/add'] = array(
+    'title'            => t('New FB Post'),
+    'description'      => t('Add a new AdviceAunt'),
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('redes_admin_form'),
+    'access arguments' => array('administer redes'),
+    'type'             => MENU_LOCAL_TASK,
+    'file'             => 'redes.admin.inc',
+    'weight'           => 2,
+  );
+  $items['admin/config/recetario/adviceaunt/edit/%'] = array(
+    'title'            => t('Edit FB Post'),
+    'description'      => t('Modify properties to AdviceAunt'),
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('redes_admin_form', 5),
+    'access arguments' => array('administer redes'),
+    'file'             => 'redes.admin.inc',
+  );
+  $items['admin/config/recetario/adviceaunt/delete/%'] = array(
+    'title'            => t('Delete FB Post'),
+    'description'      => t('Delete a AdviceAunt item'),
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('redes_admin_delete_form', 5),
+    'access arguments' => array('administer redes'),
+    'file'             => 'redes.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function redes_block_info() {
+  $blocks = array();
+  $blocks['redes_block'] = array(
+    'info'       => t('Section Advice Aunt'),
+    'weight'     => 5,
+    'status'     => TRUE,
+    'region'     => 'content',
+    'cache'      => DRUPAL_NO_CACHE,
+    'visibility' => BLOCK_VISIBILITY_LISTED,
+    'pages'      => '<front>',
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function redes_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+    case 'redes_block':
+      if(user_access('view redes')){
+        $block['content'] = redes_get_content();
+      }else{
+        $block['content'] = t('Not access view content');
+      }
+    break;
+  }//end switch
+  return $block;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function redes_theme() {
+  return array(
+    'redes_block' => array('template' => 'templates/template-redes',
+    ),
+  );
+}
+
+/**
+ * Devuelve el contenido de la sección de Consejo
+ * @return array
+ */
+function redes_get_content() {
+  $content = [];
+  $lengua  = common_language();
+
+  $qry = db_select('adviceaunt', 'fb');
+  $qry->condition('language', $lengua, '=');
+  $qry->fields('fb', ['frame']);
+  $qry->range(0,1);
+  $results = $qry->execute()->fetchAll();
+
+  if (isset($results) && !empty($results)) {
+    foreach ($results as $result) {
+      $content = [
+        'frame' => $result->frame,
+      ];
+    }//end foreach
+    return theme('redes_block', array('content' => $content));
+  }//end if
+}
