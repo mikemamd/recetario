@@ -1,0 +1,6 @@
+name = Banner
+description = Módulo para banners.
+package = Recetario | Custom
+core = 7.x
+version = "1.0.0"
+dependencies[] = common

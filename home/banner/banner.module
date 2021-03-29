@@ -1,0 +1,173 @@
+<?php
+/**
+ * @file Módulo Banner
+ * @author Miguel Martínez <miguel01amd@gmail.com>
+ * @package Recetario | Custom
+ * @info Módulo para la implementación de sección de banners
+ * @vertion dev 1.0.0
+ */
+
+
+/*
+ * Implements hook_permission().
+ */
+function banner_permission() {
+  $perm = array(
+    'administer banner' => array(
+      'title'       => t('administer banner module'),
+      'description' => t('Administer content of banner module'),
+    ),
+    'create banner'    => array(
+      'title'       => t('Create custom content of banner'),
+      'description' => t('Permit create custom banner by user'),
+    ),
+    'view banner'      => array(
+      'title'       => t('view banner'),
+      'description' => t('Permit viewer block banner'),
+    ),
+  );
+  return $perm;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function banner_block_info() {
+  $blocks = array();
+  $blocks['banner_block'] = array(
+    'info'       => t('Section Banner'),
+    'weight'     => 1,
+    'status'     => TRUE,
+    'region'     => 'content',
+    'cache'      => DRUPAL_NO_CACHE,
+    'visibility' => BLOCK_VISIBILITY_LISTED,
+    'pages'      => '<front>',
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function banner_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+    case 'banner_block':
+      if(user_access('view banner')){
+        $block['content'] = banner_get_content();
+      }else{
+        $block['content'] = t('Not access view content');
+      }
+    break;
+  }//end switch
+  return $block;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function banner_theme() {
+  return array(
+    'banner_block' => array('template' => 'templates/template-banner',
+    ),
+  );
+}
+
+/**
+ * Devuelve el contenido de la sección.
+ * @return array
+ */
+function banner_get_content() {
+  $content = $ids = $nonids = [];
+  $moment  = common_get_moment();
+
+  if ( isset($_COOKIE['bannerhome']) ) {
+    $nonids = json_decode($_COOKIE['bannerhome'], true);
+  }
+    $qry = db_select('node', 'n');
+    $qry->leftJoin('field_data_field_image_banner', 'fdfib', 'fdfib.entity_id = n.nid');
+    $qry->leftJoin('field_data_field_video_banner', 'fdfvb', 'fdfvb.entity_id = n.nid');
+    $qry->leftJoin('field_data_field_moment', 'fm', 'fm.entity_id = n.nid');
+    $qry->leftJoin('field_data_body', 'fdb', 'fdb.entity_id = n.nid');
+    $qry->condition('type', 'banner', '=')
+        ->condition('status', '1', '=')
+        ->condition('fm.field_moment_tid', $moment['tid'], '=');
+    if ( !empty($nonids)) {
+      foreach ($nonids as $nid) {
+        $qry->condition('n.nid', $nid, '!=');
+      }
+    }
+    $qry->fields('n', ['nid', 'title'])
+        ->fields('fdb', ['body_value'])
+        ->fields('fdfib', ['field_image_banner_fid'])
+        ->fields('fdfvb', ['field_video_banner_input']);
+    $qry->range(0,1);
+    $results = $qry->execute()->fetchAll();
+
+    if (isset($results) && !empty($results)) {
+      foreach ($results as $result) {
+        $content['data'][] = [
+          'title'  => $result->title,
+          'desc'   => $result->body_value,
+          'video'  => $result->field_video_banner_input,
+          'img'    => common_file_path($result->field_image_banner_fid),
+          'moment' => $moment['name'],
+          'class'  => $moment['class'],
+          'logo'   => theme_get_setting('logo', 'recetario'),
+        ];
+        $ids[] = $result->nid;
+      }//end foreach
+
+      $cookie_banner = banner_get_recipeBanner($ids);
+      if ( empty($cookie_banner) ) {
+        setcookie( 'bannerhome', json_encode($cookie_banner), strtotime( '+1 days' ) );
+      }
+    return theme('banner_block', array('content' => $content));
+  }//end if
+}
+
+/**
+ * Verifica los nids en las cookies y los agrega/elimina.
+ * @return array
+ */
+function banner_get_recipeBanner($ids) {
+
+  $data = [];
+  if ( isset($_COOKIE['bannerhome']) ) {
+    $data = json_decode($_COOKIE['bannerhome'], true);
+  }
+
+  $i = 0;
+
+  if (empty($ids)) {
+    return $data;
+  } // end if
+
+  foreach ($ids as $nid) {
+    if (in_array($nid, $data)) {
+
+    }//enif
+    else {
+      $data[] = $nid;
+    }
+  }//endforeach
+  $qry = db_select('node', 'n');
+  $qry->condition('n.type', 'receipes', '=');
+  $qry->condition('n.status', '1', '=');
+  $qry->fields('n', ['nid', 'title']);
+  $results = $qry->execute()->fetchAll();
+
+  foreach ($results as $value) {
+    ++$i;
+  }//endforeach
+  $totalnids = count($data);
+
+  if ($totalnids == $i) {
+    setcookie('bannerhome', null, strtotime( '-1 days' ) );
+    $data = [];
+  }//endif
+
+  setcookie( 'bannerhome', json_encode($data), strtotime( '+1 days' ) );
+
+  return $data;
+}
