@@ -1,0 +1,7 @@
+name = Momentos de Consumo
+description = Módulo para la sección:  "Momentos de Consumo".
+package = Recetario | Custom
+core = 7.x
+version = "1.0.0"
+dependencies[] = common
+dependencies[] = recipes
