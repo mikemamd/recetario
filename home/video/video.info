@@ -1,0 +1,6 @@
+name = Espacio Video
+description = Módulo para la sección:  "Vídeo".
+package = Recetario | Custom
+core = 7.x
+version = "1.0.0"
+dependencies[] = common

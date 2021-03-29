@@ -1,0 +1,102 @@
+<?php
+/**
+ * @file Espacio Vídeo
+ * @author Miguel Martínez <miguel01amd@gmail.com>
+ * @package Recetario | Custom
+ * @info Módulo para videos
+ * @vertion dev 1.0.0
+ */
+
+ * Implements hook_permission().
+ */
+function video_permission() {
+  $perm = array(
+    'administer video' => array(
+      'title'       => t('administer video module'),
+      'description' => t('Administer content of video module'),
+    ),
+    'create video'    => array(
+      'title'       => t('Create custom content of video'),
+      'description' => t('Permit create custom video by user'),
+    ),
+    'view video'      => array(
+      'title'       => t('view video'),
+      'description' => t('Permit viewer block video'),
+    ),
+  );
+  return $perm;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function video_block_info() {
+  $blocks = array();
+  $blocks['video_block'] = array(
+    'info'       => t('Section of videos content'),
+    'weight'     => 4,
+    'status'     => TRUE,
+    'region'     => 'content',
+    'cache'      => DRUPAL_NO_CACHE,
+    'visibility' => BLOCK_VISIBILITY_LISTED,
+    'pages'      => '<front>',
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function video_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+    case 'video_block':
+      if(user_access('view video')){
+        $block['content'] = video_get_content();
+      }else{
+        $block['content'] = t('Not access view content');
+      }
+    break;
+  }//end switch
+  return $block;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function video_theme() {
+  return array(
+    'video_block' => array('template' => 'templates/template-video'),
+  );
+}
+
+/**
+ * Devuelve el contenido de la sección de Vídeos.
+ * @return array
+ */
+function video_get_content() {
+  $content = [];
+  $lengua  = common_language();
+
+  $qry = db_select('node', 'n');
+  $qry->innerJoin('field_data_body', 'fdb', 'fdb.entity_id = n.nid');
+  $qry->innerJoin('field_data_field_video', 'fdfv', 'fdfv.entity_id = n.nid');
+  $qry->condition('type', 'promotions', '=')
+      ->condition('status', '1', '=');
+  $qry->fields('n', ['nid', 'title'])
+      ->fields('fdb', ['body_value'])
+      ->fields('fdfv', ['field_video_video_id']);
+  $qry->orderBy('created', 'DESC');
+  $results = $qry->execute()->fetchAll();
+
+  if (isset($results) && !empty($results)) {
+    foreach ($results as $result) {
+      $content[$result->nid] = [
+        'title'  => $result->title,
+        'body'   => $result->body_value,
+        'link'   => $result->field_video_video_id,
+      ];
+    }//end foreach
+    return theme('video_block', array('content' => $content));
+  }//end if
+}
