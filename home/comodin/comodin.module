@@ -1,0 +1,178 @@
+<?php
+/**
+ * @file Módulo Comodín
+ * @author Miguel Martínez <miguel01amd@gmail.com>
+ * @package Recetario | Custom
+ * @info Módulo para la sección "Comodín" dentro de Recetario
+ * @vertion dev 1.0.0
+ */
+
+
+/*
+ * Implements hook_permission().
+ */
+function comodin_permission() {
+  $perm = array(
+    'administer comodin' => array(
+      'title'       => t('administer comodin module'),
+      'description' => t('Administer content of comodin module'),
+    ),
+    'create comodin'    => array(
+      'title'       => t('Create custom content of comodin'),
+      'description' => t('Permit create custom comodin by user'),
+    ),
+    'view comodin'      => array(
+      'title'       => t('view comodin'),
+      'description' => t('Permit viewer block comodin'),
+    ),
+  );
+  return $perm;
+}
+
+/**
+ * Define las nuevas páginas
+ * Implements hook_menu().
+ * @return array
+ */
+function comodin_menu() {
+  $items = [];
+  $items['admin/structure/recetario/rcomodin'] = array(
+    'title'            => t('Video Comodin'),
+    'description'      => t('Configuración para Video Comodin'),
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('comodin_admin_form'),
+    'access arguments' => array('administer comodin'),
+    'file'             => 'comodin.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function comodin_block_info() {
+  $blocks = array();
+  $blocks['comodin_block'] = array(
+    'info'       => t('Section Comodin'),
+    'weight'     => 3,
+    'status'     => TRUE,
+    'region'     => 'content',
+    'cache'      => DRUPAL_NO_CACHE,
+    'visibility' => BLOCK_VISIBILITY_LISTED,
+    'pages'      => '<front>',
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function comodin_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+    case 'comodin_block':
+      if(user_access('view comodin')){
+        $block['content'] = comodin_get_comodin();
+      }else{
+        $block['content'] = t('Not access view content');
+      }
+    break;
+  }//end switch
+  return $block;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function comodin_theme() {
+  return array(
+    'comodin_block' => array('template' => 'templates/template-comodin',
+    ),
+  );
+}
+/**
+ * Devuelve el contenido de la sección Comodines de acuerdo al contenido
+ * de la funcion
+ * @return array
+ */
+function comodin_get_comodin() {
+$content = [];
+  $video = variable_get('comodin_banner_yt','');
+  $seleccion = variable_get('comodin_seleccion_yt','');
+
+  if($seleccion == 0){
+    $content = comodin_get_content();
+    switch($content['total']){
+      case 1:
+      $content['holder'] = ['roduct-division-one-holder'];
+      $content['col'] = ['col-12'];
+      $content['class'] = ['product-division-one-elem'];
+      $content['version'] = ['version-b'];
+      break;
+      case 2:
+      $content['holder'] = ['product-division-two-holder'];
+      $content['col'] = ['col-6'];
+      $content['class'] = ['product-division-two-elem left', 'product-division-two-elem right'];
+      $content['version'] = ['version-a', 'version-b'];
+      break;
+      case 3:
+      $content['holder'] = ['product-division-three-holder'];
+      $content['col'] = ['col-4'];
+      $content['class'] = ['product-division-three-elem left', 'product-division-three-elem center', 'product-division-three-elem right'];
+      $content['version'] = ['version-a', 'version-b', 'version-c'];
+      break;
+    }
+  }
+
+  if($seleccion == 1){
+    $content['holder'] = ['video-player-12'];
+    $content['col'] = ['col-12'];
+    $content['class'] = ['modal-video'];
+    $content['results'] = $video;
+    $content['total'] = [];
+  }
+  return theme('comodin_block', array('content' => $content));
+}
+/**
+ * Devuelve el contenido de la sección Comodines.
+ * @return array
+ */
+function comodin_get_content() {
+  $content = [];
+  $lengua  = common_language();
+
+  $qry = db_select('node', 'n');
+  $qry->innerJoin('field_data_field_image', 'fdfi', 'fdfi.entity_id = n.nid');
+  $qry->innerJoin('field_data_field_description_ec', 'fdfdc', 'fdfdc.entity_id = n.nid');
+  $qry->innerJoin('field_data_field_link_ec', 'fdflc', 'fdflc.entity_id = n.nid');
+  $qry->innerJoin('field_data_field_weight_ec', 'fdfwc', 'fdfwc.entity_id = n.nid');
+  $qry->condition('type', 'espacio_comodin', '=')
+      ->condition('status', '1', '=');
+  $qry->fields('n', ['nid', 'title'])
+      ->fields('fdfi', ['field_image_fid'])
+      ->fields('fdfdc', ['field_description_ec_value'])
+      ->fields('fdflc', ['field_link_ec_value']);
+  $qry->orderBy('fdfwc.field_weight_ec_value');
+  $qry->range(0,3);
+  $results = $qry->execute()->fetchAll();
+
+  $resultcount = $qry->execute();
+  $mostrar = $resultcount->rowCount();
+  $i = 0;
+  if (isset($results) && !empty($results)) {
+    foreach ($results as $result) {
+
+      $content['results'][] = [
+        'title'  => $result->title,
+        'desc'   => $result->field_description_ec_value,
+        'link'   => $result->field_link_ec_value,
+        'img'    => common_file_path($result->field_image_fid),
+      ];
+      ++$i;
+
+    }//end foreach
+    $content['total']= $i;
+    return $content;
+  }//end if
+}

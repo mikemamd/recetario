@@ -1,0 +1,125 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the Comodin module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function comodin_install(){
+  $array = range(1, 10, 1);
+  foreach($array as $arr ){
+    $options[$arr] = $arr;
+  }//end foreach
+
+  $content_type = array(
+    'type'          => 'espacio_comodin',
+    'name'          => t('Espacio Comodín'),
+    'description'   => t('Use para cargar items para espacio Comodín y productos del mes'),
+    'title_label'   => t('Title'),
+    'base'          => 'node_content',
+    'custom'        => TRUE,
+  );
+  $node_type = node_type_set_defaults($content_type);
+  node_type_save($node_type);
+  field_info_cache_clear();
+
+  $fields = array(
+    'descripcion' => array(
+      'field_name' => 'field_description_ec',
+      'type'       => 'text_with_summary',
+    ),
+    'url' => array(
+      'field_name' => 'field_link_ec',
+      'type'       => 'text',
+    ),
+    'weight' => array(
+      'field_name' => 'field_weight_ec',
+      'type'       => 'list_integer',
+      'indexes' => array(
+        'value' => array(
+          0 => 'value',
+        ),
+      ),
+      'settings' => array(
+        'allowed_values'          => $options,
+        'allowed_values_function' => '',
+      ),
+    ),
+  );
+  foreach($fields as $field) {
+    field_create_field($field);
+  }//end foreach
+
+  $instances = array(
+    'Description' => array(
+      'field_name'  => 'field_description_ec',
+      'label'       => t('Descripción'),
+      'description' => t('Descripción de la entrada'),
+      'required'    => TRUE,
+      'widget'      => array(
+        'type' => 'filtered_html'
+      ),
+    ),
+    'Link' => array(
+      'field_name'  => 'field_link_ec',
+      'label'       => t('Link'),
+      'description' => t('Enlace a página interna/externa del sitio'),
+      'required'    => TRUE,
+      'widget'      => array(
+        'type' => 'text',
+      ),
+    ),
+    'Imagen' => array(
+      'field_name'  => 'field_image',
+      'label'       => t('Imagen'),
+      'description' => t('Imagen de fondo del item'),
+      'required'    => TRUE,
+      'settings'    => array(
+        'file_directory'  => 'field/comodin',
+        'file_extensions' => 'png gif jpg jpeg',
+        'max_filesize'    => '',
+        'max_resolution'  => '',
+        'min_resolution'  => '',
+        'alt_field'       => FALSE,
+      ),
+    ),
+    'Weight' => array(
+      'field_name'  => 'field_weight_ec',
+      'label'       => t('Weight'),
+      'description' => t('Orden en que se mostrará elemento'),
+      'required'    => TRUE,
+      'settings' => array(),
+      'widget' => array(
+        'type'     => 'list_integer',
+        'settings' => array(),
+      ),
+    ),
+  );
+  foreach ($instances as $instance) {
+    $instance['entity_type'] = 'node';
+    $instance['bundle']      = 'espacio_comodin';
+    field_create_instance($instance);
+  }//end foreach
+}
+
+/**
+ * Implements hook_uninstall().
+*/
+function comodin_uninstall() {
+  $query  = 'SELECT nid ';
+  $query .= 'FROM {node} ';
+  $query .= 'WHERE {node}.type = :type ';
+  $result = db_query( $query, array(':type' => 'espacio_comodin') );
+  $nids = array();
+  foreach( $result as $row ) {
+    $nids[] = $row->nid;
+  }//end foreach
+  node_delete_multiple( $nids );
+  foreach( field_info_instances('node', 'espacio_comodin') as $field_name => $instance ) {
+    field_delete_instance($instance);
+  }//end foreach
+  node_type_delete('espacio_comodin');
+  field_purge_batch(1000);
+}
