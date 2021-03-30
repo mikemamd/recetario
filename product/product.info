@@ -1,0 +1,6 @@
+name = Productos
+description = Lógica para el apartado de productos
+package = Recetario | Custom
+core = 7.x
+version = "1.0.0"
+dependencies[] = common
