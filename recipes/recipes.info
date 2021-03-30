@@ -1,0 +1,7 @@
+name = Recetas
+description = Modulo para páginas de Recetas
+package = Recetario | Custom
+core = 7.x
+version = "1.0.0"
+dependencies[] = trCommon
+configure = admin/structure/recetario/recetas

@@ -1,0 +1,16 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions to recipes module.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function recipes_uninstall() {
+  variable_del('recipes_banner_img');
+  variable_del('recipes_banner_yt');
+  variable_del('recipes_title');
+  variable_del('recipes_desc');
+}

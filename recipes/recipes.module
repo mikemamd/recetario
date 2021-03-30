@@ -1,0 +1,206 @@
+<?php
+/**
+ * @file Recetas
+ * @author Miguel Martínez <miguel01amd@gmail.com>
+ * @package Recetario | Custom
+ * @info Módulo para páginas de Rcetas
+ * @vertion dev 1.0.0
+ */
+
+
+/**
+ * @file
+ * Enable Recipes Module
+ */
+module_load_include('inc', 'recipes', 'recipes');
+module_load_include('inc', 'recipes', 'recipes.services');
+
+/*
+ * Implements hook_permission().
+ */
+function recipes_permission() {
+  $perm = array(
+    'administer recipes' => array(
+      'title'       => t('administer recipes module'),
+      'description' => t('Administer content of recipes module'),
+    ),
+    'create recipes'    => array(
+      'title'       => t('Create custom content of recipes'),
+      'description' => t('Permit create custom recipes by user'),
+    ),
+    'view recipes'      => array(
+      'title'       => t('view recipes'),
+      'description' => t('Permit viewer block recipes'),
+    ),
+  );
+  return $perm;
+}
+
+/**
+ * Define las nuevas páginas
+ * Implements hook_menu().
+ * @return array
+ */
+function recipes_menu() {
+  $items = [];
+  $items['admin/structure/recetario/recetas'] = array(
+    'title'            => t('Header Banner'),
+    'description'      => t('Configuración para Header general de Recetas'),
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('recipes_admin_form'),
+    'access arguments' => array('administer recipes'),
+    'file'             => 'recipes.admin.inc',
+  );
+  $items['listado/recetas'] = array(
+    'title'            => t('Recetas'),
+    'description'      => t('Listado de Recetas'),
+    'page callback'    => 'recipes_page_empty',
+    'access arguments' => array('view recipes'),
+  );
+
+  return $items;
+}
+
+/**
+ * Callback page recetas
+ */
+function recipes_page_empty() {
+  return '';
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function recipes_block_info() {
+  $blocks = [];
+  $blocks['header_recipes'] = array(
+    'info'       => t('Banner header de Recetas'),
+    'weight'     => 1,
+    'status'     => TRUE,
+    'region'     => 'menu_header',
+    'cache'      => DRUPAL_NO_CACHE,
+    'visibility' => BLOCK_VISIBILITY_LISTED,
+    'pages'      => 'recetas',
+  );
+  $blocks['related_recipes'] = array(
+    'info'       => t('Recetas Relacionadas'),
+    'weight'     => 1,
+    'status'     => TRUE,
+    'region'     => 'content',
+    'cache'      => DRUPAL_NO_CACHE,
+    'visibility' => BLOCK_VISIBILITY_LISTED,
+    'pages'      => 'recetas/*',
+  );
+  $blocks['filter_moments'] = array(
+    'info'       => t('Filtro Recetas - Momentos'),
+    'weight'     => 1,
+    'status'     => TRUE,
+    'region'     => 'content',
+    'cache'      => DRUPAL_NO_CACHE,
+    'visibility' => BLOCK_VISIBILITY_LISTED,
+    'pages'      => 'listado/recetas',
+  );
+  $blocks['filter_times'] = array(
+    'info'       => t('Filtro Recetas - Temporada | Tiempo'),
+    'weight'     => 2,
+    'status'     => TRUE,
+    'region'     => 'content',
+    'cache'      => DRUPAL_NO_CACHE,
+    'visibility' => BLOCK_VISIBILITY_LISTED,
+    'pages'      => 'listado/recetas',
+  );
+  $blocks['filter_results'] = array(
+    'info'       => t('Filtro Recetas - Tiempo'),
+    'weight'     => 3,
+    'status'     => TRUE,
+    'region'     => 'content',
+    'cache'      => DRUPAL_NO_CACHE,
+    'visibility' => BLOCK_VISIBILITY_LISTED,
+    'pages'      => 'listado/recetas',
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function recipes_block_view($delta = '') {
+  $block = [];
+  switch ($delta) {
+    case 'header_recipes':
+      if(user_access('view recipes')){
+        $block['content'] = recipes_get_header();
+      }else{
+        $block['content'] = t('Not access view content');
+      }
+      break;
+    case 'related_recipes':
+      if(user_access('view recipes')){
+        $block['content'] = recipes_get_related();
+      }else{
+        $block['content'] = t('Not access view content');
+      }
+      break;
+    case 'filter_moments':
+      if(user_access('view recipes')){
+        $block['content'] = recipes_filter_moment('moments');
+      }else{
+        $block['content'] = t('Not access view content');
+      }
+      break;
+    case 'filter_times':
+      if(user_access('view recipes')){
+        $block['content']    = recipes_filter_moment('times');
+      }else{
+        $block['content'] = t('Not access view content');
+      }
+      break;
+    case 'filter_results':
+      drupal_add_js(drupal_get_path('module', 'recipes') . '/js/Filters.js', array('scope' => 'footer', 'weight' => 4));
+      if(user_access('view recipes')){
+        $block['content'] = recipes_filter_moment('results');
+      }else{
+        $block['content'] = t('Not access view content');
+      }
+      break;
+
+  }//end switch
+  return $block;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function recipes_theme() {
+  $theme = [];
+  $theme['header_recipes']  = [ 'template' => 'templates/recipes-header',  ];
+  $theme['related_recipes'] = [ 'template' => 'templates/related-recipes', ];
+
+  $theme['filter_moments'] = [ 'template' => 'templates/filter-moments', ];
+  $theme['filter_times']   = [ 'template' => 'templates/filter-times', ];
+  $theme['filter_results'] = [ 'template' => 'templates/filter-results', ];
+
+  return $theme;
+}
+
+
+/**
+ * Structure to node template.
+ * @return array
+ */
+function recipes_preprocess_node(&$variables) {
+  //Return img content
+  $variables['img'] = [];
+  if (isset($variables['field_image']) && !empty($variables['field_image'])) {
+    $variables['img'] = common_file_path($variables['field_image'][0]['fid']);
+  }//end if
+
+  //Return banner content
+  $variables['banner'] = [];
+  if (isset($variables['field_image_banner']) && !empty($variables['field_image_banner'])) {
+    $variables['banner']['img'] = common_file_path($variables['field_image_banner'][0]['fid']);
+  }//end if
+  $variables['banner']['logo'] = theme_get_setting('logo', 'recetario');
+
+}
