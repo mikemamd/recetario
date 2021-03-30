@@ -1,0 +1,45 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions to mainMenu module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function mainMenu_install(){
+  taxonomy_vocabulary_save((object) array(
+    'name'         => 'Social Redes',
+    'machine_name' => 'redes',
+    'description'  => t('Social Redes of site'),
+    'module'       => 'trRedes',
+  )); 
+
+  field_info_cache_clear();
+
+  field_create_field(array(
+    'field_name' => 'field_icon_class',
+    'type'       => 'text'
+  ));
+
+  field_create_instance(array(
+    'field_name'  => 'field_icon_class',
+    'label'       => t('Icon Class'),
+    'description' => t('Write the class to the icon of social red'),
+    'widget'      => array(
+      'type' => 'text',
+    ),
+    'entity_type' => 'taxonomy_term',
+    'bundle'      => 'redes'
+  ));
+
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function mainMenu_uninstall() {
+  $voc_id = taxonomy_vocabulary_machine_name_load('redes');
+  taxonomy_vocabulary_delete($voc_id->vid);
+  field_purge_batch(1000);
+}

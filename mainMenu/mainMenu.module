@@ -1,0 +1,99 @@
+<?php
+/**
+ * @file Main Menú
+ * @author Miguel Martínez <miguel01amd@gmail.com>
+ * @package Recetario | Custom
+ * @info Módulo para los menúes del sitio
+ * @vertion dev 1.0.0
+ */
+
+/**
+ * @file
+ * Top menu on the page
+ * @see /admin/structure/menu/manage/main-menu
+ */
+module_load_include('inc', 'mainMenu', 'mainMenu');
+
+/*
+ * Implements hook_permission().
+ */
+function mainMenu_permission() {
+  $perm = array(
+    'view mainMenu' => array(
+      'title'       => t('view menus'),
+      'description' => t('Permit viewer blocks mainMenu'),
+    ),
+  );
+  return $perm;
+}
+
+/**
+ * Implements hook_block_info().
+ * @return mixed
+ */
+function mainMenu_block_info() {
+  $block = [];
+
+  $block['mainMenu_header'] = array(
+    'info'       => 'Main Menu',
+    'title'      => '<none>',
+    'weight'     => 1,
+    'status'     => TRUE,
+    'region'     => 'menu_header',
+    'cache'      => DRUPAL_NO_CACHE,
+    'visibility' => BLOCK_VISIBILITY_LISTED,
+  );
+  $block['mainMenu_footer'] = array(
+    'info'       => 'Footer Menu',
+    'title'      => '<none>',
+    'weight'     => 1,
+    'status'     => TRUE,
+    'region'     => 'footer',
+    'cache'      => DRUPAL_NO_CACHE,
+    'visibility' => BLOCK_VISIBILITY_LISTED,
+  );
+  return $block;
+}
+
+/**
+ * Implements hook_block_view().
+ * Defines function that sets block view
+ */
+function mainMenu_block_view($delta = '') {
+  $block = [];
+  switch ($delta) {
+    case 'mainMenu_header':
+      if(user_access('view mainMenu')){
+        drupal_add_js(drupal_get_path('module', 'mainMenu') . '/js/Menu.js', array('scope' => 'footer', 'weight' => 3));
+        $block['content'] = mainMenu_get_content('main-menu');
+      }else{
+        $block['content'] = t('Not access view content');
+      }
+      break;
+    case 'mainMenu_footer':
+      if(user_access('view mainMenu')){
+        $block['content'] = mainMenu_get_content('menu-footermenu');
+      }else{
+        $block['content'] = t('Not access view content');
+      }
+      break;
+  }//end switch
+  return $block;
+}
+
+/**
+ * Implements hook_theme().
+ *
+ */
+function mainMenu_theme() {
+  $theme = [];
+  $theme['mainMenu_header'] = [ 'template' => 'templates/mainMenu_header',  ];
+  $theme['mainMenu_footer'] = [ 'template' => 'templates/mainMenu_footer', ];
+  $theme['form_search_custom'] = [
+    'render element' => 'form',
+    'template'       => 'templates/form-search',
+  ];
+
+  return $theme;
+
+}

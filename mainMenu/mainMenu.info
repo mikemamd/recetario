@@ -1,0 +1,4 @@
+name = Main Menu
+description = Menúes del sitio.
+package = Recetario | Custom
+core = 7.x
